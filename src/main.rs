@@ -6,10 +6,7 @@ fn main() -> io::Result<()> {
     let stdin = io::stdin();
     stdin.read_line(&mut buffer_name)?;
     
-    println!("Does your basket contain an apple?");
-    let mut buffer_apple = String::new();
-    stdin.read_line(&mut buffer_apple)?;
-    let apple = if buffer_apple.trim().parse::<bool>().expect("Should be true or false") {
+    let apple = if fruit_question(&stdin, String::from("apple")) {
             Some(Apfel)
         } else {
             None
@@ -22,6 +19,14 @@ fn main() -> io::Result<()> {
         };
 
     Ok(())
+}
+
+fn fruit_question(stdin: &io::Stdin, frucht:String) -> bool {
+    println!("Does your basket contain an {}?", frucht);
+    let mut buffer_fruit = String::new();
+    stdin.read_line(&mut buffer_fruit).expect("Should be able to read from stdin!");
+
+    buffer_fruit.trim().parse::<bool>().expect("Should be true or false")
 }
 
 struct Apfel;

@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "Obstkorb"
+name = "obstkorb"
 version = "0.1.0"
