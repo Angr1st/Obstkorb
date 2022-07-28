@@ -1,7 +1,8 @@
 use core::fmt::Formatter;
+use std::str::ParseBoolError;
 
 fn main () -> Result<(),Errors> {
-    println!("Wie viele Obstkörbe möchten Sie?");
+    println!("> Wie viele Obstkörbe möchten Sie?");
 
     let mut input_buffer = String::new();
     read_answer(&mut input_buffer)?;   
@@ -9,32 +10,18 @@ fn main () -> Result<(),Errors> {
     let mut körbe = Vec::with_capacity(korb_anzahl);
     for _ in 0..korb_anzahl {
         let mut korb_name = String::new();
-        println!("Wie soll dein Korb heißen?");
+        println!("> Wie soll dein Korb heißen?");
         read_answer(&mut korb_name)?;
 
         let mut fruits = Vec::new();
-
-        println!("Soll der Korb Äpfel enthalten?");
-        read_answer(&mut input_buffer)?;
-        let has_apfel = input_buffer.trim().parse::<bool>()?;
-        if has_apfel {
-            println!("Wie viele Äpfel soll dein Korb enthalten?");
-            read_answer(&mut input_buffer)?;
-            let apfel_amount = input_buffer.trim().parse::<usize>()?;
-            let mut apfels = Vec::with_capacity(apfel_amount);
-            for _ in 0..apfel_amount {
-                let apfel = Apfel;
-                let box_apfel : Box<dyn Fruit> = Box::new(apfel);
-                apfels.push(box_apfel);
-            }
-
-            fruits.append(&mut apfels);
-        }
        
         ask_for_fruit(&mut input_buffer, &mut fruits,"Äpfel",Apfel::new_boxed)?;
+        ask_for_fruit(&mut input_buffer, &mut fruits,"Bananen",Banane::new_boxed)?;
+        ask_for_fruit(&mut input_buffer, &mut fruits,"Melonen",Melone::new_boxed)?;
+
 
         let new_korb = Obstkorb {
-            name : korb_name,
+            name : korb_name.trim().to_string(),
             fruits
         };
         körbe.push(new_korb);
@@ -50,11 +37,11 @@ fn main () -> Result<(),Errors> {
 
 fn ask_for_fruit(buffer: &mut  String, fruits: &mut Vec<Box<dyn Fruit>>, fruit_name: &str, create_fruit: fn() -> Box<dyn Fruit>) -> Result<(),Errors> {
 
-    println!("Soll der Korb {} enthalten?", fruit_name);
+    println!("> Soll der Korb {} enthalten?", fruit_name);
         read_answer(buffer)?;
-        let has_fruit = buffer.trim().parse::<bool>()?;
+        let has_fruit = ja_oder_nein(&buffer.trim())?;
         if has_fruit {
-            println!("Wie viele {} soll dein Korb enthalten?", fruit_name);
+            println!("> Wie viele {} soll dein Korb enthalten?", fruit_name);
             read_answer(buffer)?;
             let fruit_amount = buffer.trim().parse::<usize>()?;
 
@@ -64,6 +51,14 @@ fn ask_for_fruit(buffer: &mut  String, fruits: &mut Vec<Box<dyn Fruit>>, fruit_n
         }
 
     Ok(())
+}
+
+fn ja_oder_nein(answer:&str) -> Result<bool,ParseBoolError> {
+    match answer {
+        "ja" | "Ja" => Ok(true),
+        "nein" | "Nein" => Ok(false),
+        x => x.parse::<bool>()
+    }
 }
 
 fn read_answer(buffer: &mut  String) -> std::io::Result<()> {
