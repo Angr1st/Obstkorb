@@ -192,14 +192,22 @@ impl Obstkorb {
 
     fn output_contents(&self) {
         let mut result_vec: Vec<ObstkorbContent> = Vec::new();
-        println!("Der Korb enthält:");
-        self
-        .fruits
-        .iter()
-        .map(|fruit|ObstkorbContent::new(fruit.boxed_new()))
-        .fold(&mut result_vec,ObstkorbContent::fold)
-        .into_iter()
-        .for_each(|oc| oc.output())
+        
+
+        if self.fruits.is_empty() {
+            println!("Der Korb ist leer!")
+        }
+        else {
+            println!("Der Korb enthält:");
+
+            self
+            .fruits
+            .iter()
+            .map(|fruit|ObstkorbContent::new(fruit.boxed_new()))
+            .fold(&mut result_vec,ObstkorbContent::fold)
+            .into_iter()
+            .for_each(|oc| oc.output())
+        }
     }
 }
 
