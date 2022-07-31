@@ -15,9 +15,9 @@ fn main () -> Result<(),Errors> {
 
         let mut fruits = Vec::new();
        
-        ask_for_fruit(&mut input_buffer, &mut fruits,"Äpfel",Apfel::new_boxed)?;
-        ask_for_fruit(&mut input_buffer, &mut fruits,"Bananen",Banane::new_boxed)?;
-        ask_for_fruit(&mut input_buffer, &mut fruits,"Melonen",Melone::new_boxed)?;
+        ask_for_fruit(&mut input_buffer, &mut fruits,Apfel)?;
+        ask_for_fruit(&mut input_buffer, &mut fruits,Banane)?;
+        ask_for_fruit(&mut input_buffer, &mut fruits,Melone)?;
 
 
         let new_korb = Obstkorb {
@@ -35,7 +35,9 @@ fn main () -> Result<(),Errors> {
     Ok(())
 }
 
-fn ask_for_fruit(buffer: &mut  String, fruits: &mut Vec<Box<dyn Fruit>>, fruit_name: &str, create_fruit: fn() -> Box<dyn Fruit>) -> Result<(),Errors> {
+fn ask_for_fruit(buffer: &mut  String, fruits: &mut Vec<Box<dyn Fruit>>, fruit: impl Fruit) -> Result<(),Errors> {
+
+    let fruit_name = fruit.plural_name();
 
     println!("> Soll der Korb {} enthalten?", fruit_name);
         read_answer(buffer)?;
@@ -46,7 +48,7 @@ fn ask_for_fruit(buffer: &mut  String, fruits: &mut Vec<Box<dyn Fruit>>, fruit_n
             let fruit_amount = buffer.trim().parse::<usize>()?;
 
             for _ in 0..fruit_amount {
-                fruits.push(create_fruit());
+                fruits.push(fruit.boxed_new());
             }            
         }
 
@@ -70,55 +72,112 @@ fn read_answer(buffer: &mut  String) -> std::io::Result<()> {
 }
 
 trait Fruit {
-    fn name(&self) -> String;
+    fn name(&self) -> &'static str;
+    fn plural_name(&self) -> &'static str;
+    fn boxed_new(&self) -> Box<dyn Fruit>;
 }
 
 struct Apfel;
 
-impl Apfel {
-    fn new_boxed() -> Box<dyn Fruit> {
+impl Fruit for Apfel {
+    fn name(&self) -> &'static str {
+        "Apfel"
+    }
+
+    fn plural_name(&self) -> &'static str {
+        "Äpfel"
+    }
+
+    fn boxed_new(&self) -> Box<dyn Fruit> {
         let apfel = Apfel;
         Box::new(apfel)
     }
 }
 
-impl Fruit for Apfel {
-    fn name(&self) -> String {
-        String::from("Apfel")
-    }
-}
-
 struct Banane;
 
-impl Banane {
-    fn new_boxed() -> Box<dyn Fruit> {
+impl Fruit for Banane {
+    fn name(&self) -> &'static str {
+        "Banane"
+    }
+
+    fn plural_name(&self) -> &'static str {
+        "Bananen"
+    }
+
+    fn boxed_new(&self) -> Box<dyn Fruit> {
         let banane = Banane;
         Box::new(banane)
-    }
-}
-
-impl Fruit for Banane {
-    fn name(&self) -> String {
-        String::from("Banane")
     }
 }
 
 
 struct Melone;
 
-impl Melone {
-    fn new_boxed() -> Box<dyn Fruit> {
+impl Fruit for Melone {
+    fn name(&self) -> &'static str {
+        "Melone"
+    }
+
+    fn plural_name(&self) -> &'static str {
+        "Melonen"
+    }
+
+    fn boxed_new(&self) -> Box<dyn Fruit> {
         let melone = Melone;
         Box::new(melone)
     }
 }
 
-impl Fruit for Melone {
-    fn name(&self) -> String {
-        String::from("Melone")
-    }
+struct ObstkorbContent 
+{
+    fruit:Box<dyn Fruit>,
+    amount:usize
 }
 
+impl ObstkorbContent {
+    fn new(fruit:Box<dyn Fruit>) -> ObstkorbContent {
+        ObstkorbContent { fruit, amount: 1 }
+    }
+
+    fn increment(&mut self, other: &ObstkorbContent) -> bool {
+        if self.fruit.name() == other.fruit.name() {
+            self.amount = self.amount + 1;
+            true
+        }
+        else {
+            false
+        }
+    }
+
+    fn fold(acc:&mut Vec<Self>, oc: Self) -> &mut Vec<Self> {
+        if acc.is_empty() {
+            acc.push(oc);
+            acc
+        }
+        else {
+            let mut last = acc.pop().expect("Es sollte mindestens ein Element im Vec sein!");
+            let is_same_fruit = last.increment(&oc);
+            if is_same_fruit {
+                acc.push(last);
+            }
+            else {
+                acc.push(last);
+                acc.push(oc);
+            }
+            acc
+        }
+    } 
+
+    fn output(&self) {
+        if self.amount == 1 {
+            println!("{} {}", 1, self.fruit.name())
+        }
+        else {
+            println!("{} {}", self.amount, self.fruit.plural_name())
+        }
+    }
+}
 
 struct Obstkorb
 {
@@ -128,12 +187,19 @@ struct Obstkorb
 
 impl Obstkorb {
     fn output_name(&self) {
-        println!("{}",self.name);
+        println!("Der Name des Korbs ist: {}",self.name);
     }
 
     fn output_contents(&self) {
+        let mut result_vec: Vec<ObstkorbContent> = Vec::new();
         println!("Der Korb enthält:");
-        self.fruits.iter().for_each(|fruit| println!("{}",fruit.name()));
+        self
+        .fruits
+        .iter()
+        .map(|fruit|ObstkorbContent::new(fruit.boxed_new()))
+        .fold(&mut result_vec,ObstkorbContent::fold)
+        .into_iter()
+        .for_each(|oc| oc.output())
     }
 }
 
